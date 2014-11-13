@@ -1,0 +1,37 @@
+<!-- index.html -->
+	<!DOCTYPE html>
+	<html ng-app="receiptApp">
+	<head>
+	  <!-- SCROLLS -->
+	  <!-- load bootstrap and fontawesome via CDN -->
+	  <link rel="stylesheet" href="bootstrap.min.css" />
+	  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.0/css/font-awesome.css" />
+       <link rel="stylesheet" type="text/css" href="receipt.css"/>
+	  <!-- SPELLS -->
+	  <!-- load angular and angular route via CDN -->
+	  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.25/angular.min.js"></script>
+      <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.25/angular-route.js"></script>
+       <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+        <script src="charts.js"></script>
+	        <script src="script.js"></script>
+	        <script src="jquery-1.11.0.min.js"></script>
+	        <script src="jquery-sortable.js"></script>
+        <script src="ui-bootstrap-tpls-0.8.0.min.js"></script>
+
+	</head>
+	<body ng-controller="mainController">
+
+
+		<!-- MAIN CONTENT AND INJECTED VIEWS -->
+		<div id="main" style="text-align:center;">
+			<!-- angular templating -->
+			<!-- this is where content will be injected -->
+            <!--<mcm-donut-chart data="piechart_data" outer-radius="250"></mcm-donut-chart>-->
+            <!--<mcm-column-chart data="user_data" value="value" coloring="grouping[0]" ></mcm-column-chart>-->
+            <mcm-customizable-chart chart-type="'mcm-column-chart'" chart-title="Histogram" radio="requests.radio" settings="requests.settings" selections="requests.selections" options="requests.options" chart-data="allRequestData"></mcm-customizable-chart>
+            <!--<input ng-model="email_address">-->
+
+		</div>
+
+	</body>
+	</html>
