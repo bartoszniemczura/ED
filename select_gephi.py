@@ -50,9 +50,9 @@ left join themes on themes.id=theme_id"""
 
 TALKS_THEMES = """
 SELECT names_themes.name, themes.name from
-(SELECT id, name, theme_id FROM talks
-LEFT JOIN talk_themes ON talk_id=id) as names_themes
-LEFT JOIN themes ON themes.id=talk_themes.theme_id"""
+(SELECT id, name, talk_themes.theme_id as theme_id FROM talks
+LEFT JOIN talk_themes ON talk_themes.talk_id=talks.id) as names_themes
+LEFT JOIN themes ON themes.id=names_themes.theme_id"""
 
 
 TALKS_THEMES_MAX = """
@@ -60,6 +60,20 @@ SELECT names_themes.name, themes.name from
   (SELECT id, name, theme_id FROM talks
     LEFT JOIN talk_themes ON talk_id=id) as names_themes
     LEFT JOIN themes ON themes.id=talk_themes.theme_id"""
+
+TALKS_RATINGS_HIGHEST = """
+select d.talk_id as talk1, t.talk_id as talk2, d.name as rating_name from
+ratings_temp as t
+left join
+ratings_temp as d on t.name = d.name where t.talk_id != d.talk_id"""
+
+
+TALKS_RATINGS= """
+select d.talk_id as talk1, t.talk_id as talk2, d.name as rating_name from
+ratings as t
+left join
+ratings as d on t.name = d.name where t.talk_id != d.talk_id"""
+
 
 def comments(cursor):
     cursor.execute(COMMENTS_GRAPH)
@@ -208,29 +222,75 @@ def talks_users_filtered(cursor):
                 fh.write("\n")
 
 
-# def talks_themes(cursor):
-#     cursor.execute(TALKS_THEMES)
-#     themes_to_talk = defaultdict(lambda: defaultdict(int))
-#     talks = set()
-#     for row in cursor:
-#         talks.add(row[0].replace(',', ''))
-#         themes_to_talk[str(row[1]).replace(',', '')][row[0].replace(',', '')] += 1
-#     i = 0
-#     talk_dict = {}
-#     for t in talks:
-#         talk_dict[t] = i
-#         i += 1
-#
-#     with open("talks_themes_nodes.csv", 'w+', encoding="UTF8") as fh:
-#         fh.write('id,label\n')
-#         for t in talk_dict:
-#             fh.write("{0},{1}\n".format(talk_dict[t], t))
-#
-#     with open("talks_themes_edges.csv", 'w+', encoding="UTF8") as fh:
-#         fh.write('source,target,weight\n')
-#         for t in themes_to_talk:
-#             themes_to_talk[]
+def talks_themes(cursor):
+    cursor.execute(TALKS_THEMES)
+    theme_to_talks = defaultdict(list)
+    talk_to_themes = defaultdict(list)
+    talks = set()
+    for row in cursor:
+        talks.add(row[0].replace(',', ''))
+        theme_to_talks[str(row[1]).replace(',', '')].append(str(row[0]).replace(',', ''))
+        talk_to_themes[str(row[0]).replace(',', '')].append(str(row[1]).replace(',', ''))
+    i = 0
+    talk_dict = {}
+    for t in talks:
+        talk_dict[t] = i
+        i += 1
 
+    with open("talks_themes_nodes.csv", 'w+', encoding="UTF8") as fh:
+        fh.write('id,label\n')
+        for t in talk_dict:
+            fh.write("{0},{1}\n".format(talk_dict[t], t))
+
+    with open("talks_themes_edges.csv", 'w+', encoding="UTF8") as fh:
+        fh.write('source,target,label,type\n')
+        for t in talk_to_themes:
+            themes = talk_to_themes[t]
+            for theme in themes:
+                # print(theme)
+                theme_to_talks[theme].remove(t)
+                for talk in theme_to_talks[theme]:
+                    fh.write("{0},{1},{2},undirected\n".format(talk_dict[t], talk_dict[talk], theme))
+
+
+def talks_themes_maxcliques(cursor):
+    cursor.execute(TALKS_THEMES)
+    theme_to_talks = defaultdict(list)
+    talks = set()
+    for row in cursor:
+        talks.add(row[0].replace(',', ''))
+        theme_to_talks[str(row[1]).replace(',', '')].append(str(row[0]).replace(',', ''))
+    i = 0
+    talk_dict = {}
+    for t in talks:
+        talk_dict[t] = i
+        i += 1
+
+    with open("talks_themes_cliques.csv", 'w+', encoding="UTF8") as fh:
+        for t in theme_to_talks:
+            for talk in theme_to_talks[t]:
+                fh.write("{0} ".format(talk_dict[talk]))
+            fh.write(" -1\n")
+
+
+def talks_ratings(cursor):
+    cursor.execute(TALKS_RATINGS)
+    talks_edges = []
+    talks = set()
+    for row in cursor:
+        talks.add(row[0])
+        talks.add(row[1])
+        talks_edges.append(row)
+
+    with open("talks_ratings_all_nodes.csv", 'w+', encoding="UTF8") as fh:
+        fh.write('id\n')
+        for t in talks:
+            fh.write("{0}\n".format(t))
+
+    with open("talks_ratings_all_edges.csv", 'w+', encoding="UTF8") as fh:
+        fh.write('source,target,label,type\n')
+        for t in talks_edges:
+            fh.write("{0},{1},{2},undirected\n".format(t[0], t[1], t[2]))
 
 
 def minimize_file(filename, output):
@@ -266,6 +326,9 @@ def minimize_file(filename, output):
     return d
 
 
+# def
+
+
 if __name__ == "__main__":
     # minimize_file("talks_users_filtered.csv", "minimized_talks_user_filtered.csv")
     db = pymysql.connect(host="127.0.0.1", port=10888, user=USER, passwd=PWD, db="igor", charset='utf8')
@@ -274,7 +337,9 @@ if __name__ == "__main__":
     # comments(cur)
     # talks_users_filtered(cur)
     # comments_themes(cur)
-    users_themes(cur)
+    talks_themes(cur)
+    # talks_ratings(cur)
+    # talks_themes_maxcliques(cur)
     cur.close()
     db.close()
     pass
