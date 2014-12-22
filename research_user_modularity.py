@@ -1,3 +1,7 @@
+"""
+Script fot generating histogram of number of users interacting with given theme per year. Module was computed using Gephy
+"""
+
 from collections import defaultdict
 
 years = range(2009, 2014)
@@ -7,7 +11,6 @@ if __name__ == "__main__":
     with open("themes.csv", encoding="utf8") as themes_file:
         data = [x.strip("\n").split(",") for x in themes_file.readlines()]
         theme_ids_to_names = {int(x[0]): x[1] for x in data}
-    # print(theme_ids_to_names)
     users_to_themes = defaultdict(lambda: defaultdict(int))
     for year in years:
         with open("ed/users{0}_edges.csv".format(year)) as connections_file:
@@ -17,7 +20,6 @@ if __name__ == "__main__":
                     continue
                 users_to_themes[int(elem[0])][theme_ids_to_names[int(elem[2])]] += int(float(elem[3]))
                 users_to_themes[int(elem[1])][theme_ids_to_names[int(elem[2])]] += int(float(elem[3]))
-        # print(users_to_themes)
         modularity_to_ids = defaultdict(list)
         ids_to_modularity = {}
 
@@ -26,15 +28,12 @@ if __name__ == "__main__":
             for elem in data:
                 ids_to_modularity[int(elem[0])] = int(elem[1])
                 modularity_to_ids[int(elem[1])].append(int(elem[0]))
-        # print(ids_to_modularity)
-        # print(modularity_to_ids)
 
         for module in modularity_to_ids.keys():
             for user_id in modularity_to_ids[module]:
                 for user_topic, topic_count in users_to_themes[user_id].items():
                     years_to_modules[year][module][user_topic] += topic_count
 
-    # print(years_to_modules)
     for year, modules in years_to_modules.items():
         print("YEAR: " + str(year))
         with open("user_modularity_{0}.csv".format(year), "w+", encoding="utf8") as output_file:
